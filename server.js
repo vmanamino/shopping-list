@@ -13,6 +13,7 @@ Storage.prototype.add = function(name) {
 };
 
 Storage.prototype.fetch = function(id){
+    console.log(typeof id, id);
     var item = '';
     for (var i = 0; i < this.items.length; i++){
         if (id == this.items[i].id){
@@ -42,6 +43,7 @@ Storage.prototype.deleteItem = function(id){
 
 Storage.prototype.update = function(obj){
   var item = '';
+  // Databases are fast; index, faster lookup algorithms, etc.
   for (var i = 0; i < this.items.length; i++){
     if (obj.id == this.items[i].id){
       this.items[i].name = obj.name
@@ -59,18 +61,30 @@ var storage = new Storage();
 storage.add('Broad beans');
 storage.add('Tomatoes');
 storage.add('Peppers');
-console.log(storage.fetch(0));
-console.log(storage.deleteItem(1));
 
 var app = express();
 app.use(express.static('public'));
+
+var bodyParser = require('body-parser');
+var jsonParser = bodyParser.json();
+
+app.get("/items/:id", function(req, res){
+   console.log(req.params.id)
+   console.log(storage.items)
+   var id = req.params.id
+   var item = storage.fetch(req.params.id);
+   if (item == 'not found'){
+        res.status(400).json({message: item, statusCode: 13});
+   }
+   else {
+       res.status(200).json(item)
+   }
+});
 
 app.get('/items', function(req, res) {
     res.json(storage.items);
 });
 
-var bodyParser = require('body-parser');
-var jsonParser = bodyParser.json();
 
 app.post('/items', jsonParser, function(req, res) {
     if (!req.body) {
@@ -86,7 +100,8 @@ app.delete('/items/:id', function(req, res){
     console.log(id)
     var item = storage.deleteItem(id)
     if (item == 'not found'){
-        return res.sendStatus(400)
+        // return res.sendStatus(400)
+        res.status(400).json({message: item, statusCode: 13});
     }
     else {
         res.status(201).json(item)
